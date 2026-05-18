@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+.env
+.env.local
+.env*.local
+.vercel
+.DS_Store
+*.log
+
+# Phase 1 local admin credential store (hashed admin password)
+data/

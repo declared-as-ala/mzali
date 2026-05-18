@@ -1,0 +1,98 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Cairo:wght@400;600;700;900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-50: #e5dafc;
+  --primary-100: #ab93f4;
+  --primary-200: #7c4dff;
+  --primary-300: #5b2ccf;
+  --secondary-200: #0e55fb;
+  --tertiary-100: #f5f7f9;
+  --tertiary-200: #eceff3;
+  --tertiary-300: #6f7072;
+  --cta: #22bf59;
+}
+
+html,
+body {
+  background: #fcfcfd;
+  color: #1a1a1a;
+}
+
+body {
+  font-family: Inter, Cairo, system-ui, sans-serif;
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-brand-500 px-5 py-3 font-bold text-white shadow-soft transition hover:bg-brand-600 active:scale-[.98];
+  }
+
+  .btn-cta {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl bg-cta px-6 py-3.5 font-black text-white shadow-cta transition hover:bg-cta-dark active:scale-[.98];
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 font-semibold text-slate-700 transition hover:bg-slate-50;
+  }
+
+  .card {
+    @apply rounded-2xl border border-ink-200 bg-white shadow-card;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-ink-200 bg-white px-4 py-3 outline-none transition focus:border-brand-500 focus:ring-2 focus:ring-brand-50;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-700;
+  }
+
+  .container-shop {
+    @apply mx-auto max-w-7xl px-4 lg:px-8;
+  }
+}
+
+/* Top announcement bar */
+.announce-bar {
+  background: linear-gradient(
+    90deg,
+    var(--primary-300),
+    var(--secondary-200)
+  );
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+}
+
+/* Sticky CTA shake */
+.shake-cta {
+  animation: shake 1.5s ease-in-out infinite;
+}
+
+/* Drawer animations */
+.drawer-overlay {
+  @apply pointer-events-none fixed inset-0 z-40 bg-slate-900/40 opacity-0 transition;
+}
+
+.drawer-overlay.open {
+  @apply pointer-events-auto opacity-100;
+}
+
+.drawer {
+  @apply fixed right-0 top-0 z-50 h-screen w-full max-w-[1100px] translate-x-full bg-white shadow-2xl transition-transform;
+}
+
+.drawer.open {
+  @apply translate-x-0;
+}
+
+/* RTL for Arabic text inside cards */
+[dir="rtl"],
+.rtl {
+  direction: rtl;
+  font-family: Cairo, Inter, system-ui, sans-serif;
+}
