@@ -25,6 +25,11 @@ export async function DELETE(_req: Request, { params }: { params: { id: string }
     await productService.remove(params.id);
     return NextResponse.json({ ok: true });
   } catch (e) {
-    return NextResponse.json({ error: e instanceof Error ? e.message : 'delete failed' }, { status: 500 });
+    const msg = e instanceof Error ? e.message : 'delete failed';
+    // WooCommerce returns 404 when the resource is already gone — treat as success.
+    if (/\b404\b/.test(msg) || /invalid_id/i.test(msg)) {
+      return NextResponse.json({ ok: true, alreadyDeleted: true });
+    }
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
