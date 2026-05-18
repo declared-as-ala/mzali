@@ -1,9 +1,25 @@
 'use client';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Lock } from 'lucide-react';
 
 export default function Login() {
+  return (
+    <Suspense fallback={<LoadingShell />}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoadingShell() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-gradient-to-br from-brand-700 to-slate-900 p-4">
+      <div className="h-72 w-full max-w-sm animate-pulse rounded-2xl bg-white/10" />
+    </div>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const sp = useSearchParams();
   const [password, setPassword] = useState('');
@@ -13,7 +29,11 @@ export default function Login() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true); setErr('');
-    const res = await fetch('/api/auth', { method: 'POST', body: JSON.stringify({ password }) });
+    const res = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password }),
+    });
     if (res.ok) router.push(sp.get('from') ?? '/admin');
     else { setErr('Mot de passe incorrect'); setLoading(false); }
   }
@@ -27,10 +47,19 @@ export default function Login() {
           <p className="text-sm text-slate-500">Connexion administrateur</p>
         </div>
         <label className="block text-sm font-semibold">Mot de passe
-          <input type="password" autoFocus className="input mt-1" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <input
+            type="password"
+            autoFocus
+            className="input mt-1"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
         </label>
         {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
-        <button disabled={loading} className="btn-primary mt-6 w-full disabled:opacity-50">{loading ? '...' : 'Connexion'}</button>
+        <button disabled={loading} className="btn-primary mt-6 w-full disabled:opacity-50">
+          {loading ? '...' : 'Connexion'}
+        </button>
       </form>
     </div>
   );
