@@ -1,12 +1,8 @@
 /**
- * Tiny file-based admin credential store.
+ * Tiny file-based admin credential + site settings store.
  * Phase 1 only — Phase 2 will move this into the real database.
  *
- * File: data/admin.json  (gitignored)
- * Shape: { passwordHash: string, salt: string, updatedAt: string }
- *
- * The env var ADMIN_PASSWORD is kept as a MASTER fallback so the admin can
- * always log in even if they forget the custom password.
+ * Files: data/admin.json, data/site-settings.json  (gitignored)
  */
 import 'server-only';
 import fs from 'node:fs/promises';
@@ -15,6 +11,33 @@ import crypto from 'node:crypto';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const FILE = path.join(DATA_DIR, 'admin.json');
+const SETTINGS_FILE = path.join(DATA_DIR, 'site-settings.json');
+
+// ─── Site settings ────────────────────────────────────────────────────────────
+
+export type SiteSettings = {
+  photoUrl: string | null;
+  phones: string[];
+  whatsapp: string;
+  instagram: string;
+  tiktok: string;
+  facebook: string;
+};
+
+export async function getSiteSettings(): Promise<Partial<SiteSettings>> {
+  try {
+    const buf = await fs.readFile(SETTINGS_FILE, 'utf8');
+    return JSON.parse(buf) as Partial<SiteSettings>;
+  } catch {
+    return {};
+  }
+}
+
+export async function setSiteSettings(patch: Partial<SiteSettings>): Promise<void> {
+  await fs.mkdir(DATA_DIR, { recursive: true });
+  const current = await getSiteSettings();
+  await fs.writeFile(SETTINGS_FILE, JSON.stringify({ ...current, ...patch }, null, 2), 'utf8');
+}
 
 type Stored = { passwordHash: string; salt: string; updatedAt: string };
 

@@ -7,6 +7,7 @@ export type OrderListQuery = {
   search?: string;
   after?: string;
   before?: string;
+  assignedEmployeeId?: string | 'any' | 'unassigned';
 };
 
 export type OrderListResult = {
@@ -23,7 +24,17 @@ export type OrderUpdate = {
   deliveryCompany?: string;
   exchange?: boolean;
   privateNote?: string;
-  items?: { productId: string; qty: number; unitPrice?: number }[];
+  subtotal?: number;
+  total?: number;
+  attempts?: number;
+  items?: {
+    productId: string;
+    qty: number;
+    unitPrice?: number;
+    variation?: Record<string, string>;
+    bundleName?: string;
+    bundleSlot?: number;
+  }[];
 };
 
 export interface OrderService {
@@ -32,4 +43,6 @@ export interface OrderService {
   list(query?: OrderListQuery): Promise<OrderListResult>;
   update(id: string, patch: OrderUpdate): Promise<OrderResponse>;
   remove(id: string): Promise<void>;
+  /** Assign or reassign an order to an employee (pass null to unassign). */
+  assignEmployee(orderId: string, employeeId: string | null, assignedBy?: 'auto' | 'admin'): Promise<OrderResponse>;
 }

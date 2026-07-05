@@ -3,7 +3,7 @@ import { isAdmin } from '@/lib/auth';
 import { orderService } from '@/services';
 
 export async function GET(req: Request) {
-  if (!isAdmin()) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdmin())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const url = new URL(req.url);
   const phone = url.searchParams.get('phone')?.trim();
   if (!phone) return NextResponse.json({ error: 'phone required' }, { status: 400 });

@@ -56,9 +56,10 @@ export type ProductListQuery = {
   page?: number;
   perPage?: number;
   search?: string;
+  status?: string;
   categorySlug?: string;
   categoryId?: string;
-  orderBy?: 'date' | 'price' | 'popularity' | 'rating' | 'title';
+  orderBy?: 'date' | 'price' | 'popularity' | 'rating' | 'title' | 'menu_order';
   order?: 'asc' | 'desc';
   onSale?: boolean;
   featured?: boolean;
