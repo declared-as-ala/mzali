@@ -3,7 +3,7 @@ import { isAdmin } from '@/lib/auth';
 import { verifyPassword, setPassword, clearStoredPassword, getPasswordMeta } from '@/lib/admin-storage';
 
 export async function GET() {
-  if (!isAdmin()) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdmin())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const meta = await getPasswordMeta();
   return NextResponse.json({
     username: 'admin',
@@ -14,7 +14,7 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
-  if (!isAdmin()) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdmin())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   try {
     const { currentPassword, newPassword, confirmPassword } = await req.json();
     if (!newPassword || newPassword !== confirmPassword) {
@@ -33,7 +33,7 @@ export async function PUT(req: Request) {
 }
 
 export async function DELETE() {
-  if (!isAdmin()) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdmin())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   await clearStoredPassword();
   return NextResponse.json({ ok: true });
 }

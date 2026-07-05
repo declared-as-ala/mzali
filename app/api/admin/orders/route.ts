@@ -3,7 +3,7 @@ import { isAdmin } from '@/lib/auth';
 import { orderService } from '@/services';
 
 export async function POST(req: Request) {
-  if (!isAdmin()) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdmin())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   try {
     const body = await req.json();
     const order = await orderService.create(body);

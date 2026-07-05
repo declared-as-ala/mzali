@@ -15,9 +15,13 @@ export type CheckoutPayload = {
   customer: CheckoutCustomer;
   items: CartItem[];
   shipping: number;     // delivery cost
+  subtotal?: number;
+  total?: number;
   deliveryCompany?: string;
   paymentMethod?: 'cod' | 'card';
   source?: string;      // utm/source for analytics
+  status?: string;      // optional status
+  attempts?: number;    // number of call attempts
 };
 
 // Standard WooCommerce statuses + any custom slug (e.g. Tunisian COD plugins:
@@ -39,6 +43,7 @@ export type OrderLineItem = {
   price: number;
   total: number;
   imageUrl?: string;
+  attributes?: { key: string; value: string }[];   // variation / bundle slot info shown in admin
 };
 
 export type OrderResponse = {
@@ -51,5 +56,7 @@ export type OrderResponse = {
   customer: CheckoutCustomer;
   items: OrderLineItem[];
   shipping: number;
+  assignedEmployeeId?: string | null;
+  assignedAt?: string | null;
   meta?: Record<string, unknown>;
 };

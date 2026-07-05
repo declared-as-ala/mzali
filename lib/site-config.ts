@@ -2,7 +2,9 @@
 export const SITE = {
   name: 'Boutique Ahmed Mzali',
   domain: 'boutiqueahmedmzali.com',
-  logo: 'https://cdn.converty.shop/images/25fcc422d849332b0a50da9fded0c6b4f3233d728efb1c62aeeffd0edde26cb5_md.webp',
+  logo: '/hero.webp',
+  /** Remote CDN fallback in case you want to reference the original instead. */
+  logoRemote: 'https://cdn.converty.shop/images/25fcc422d849332b0a50da9fded0c6b4f3233d728efb1c62aeeffd0edde26cb5_md.webp',
   announcementBar: 'BIENVENUE A BOUTIQUE AHMED MZALI',
   hero: {
     title: 'livraison sur toute la tunisie ❤️',
