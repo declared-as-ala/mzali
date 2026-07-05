@@ -3,13 +3,13 @@ import { isAdmin } from '@/lib/auth';
 import { categoryService } from '@/services';
 
 export async function GET() {
-  if (!isAdmin()) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdmin())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   const cats = await categoryService.list({ hideEmpty: false });
   return NextResponse.json(cats);
 }
 
 export async function POST(req: Request) {
-  if (!isAdmin()) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdmin())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   try {
     const body = await req.json();
     const cat = await categoryService.create(body);

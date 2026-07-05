@@ -1,9 +1,10 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import type { Product } from '@/types';
 import { formatPrice } from '@/lib/site-config';
+import { getDictionary, type Lang } from '@/lib/i18n';
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({ product, lang = 'fr' }: { product: Product; lang?: Lang }) {
+  const t = getDictionary(lang);
   const img = product.images[0]?.url;
   const discount = product.onSale && product.regularPrice > product.price
     ? Math.round(((product.regularPrice - product.price) / product.regularPrice) * 100)
@@ -14,31 +15,31 @@ export default function ProductCard({ product }: { product: Product }) {
       href={`/produit/${product.slug}`}
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-ink-200 bg-white shadow-sm transition hover:-translate-y-1 hover:border-brand-300 hover:shadow-card"
     >
-      <div className="relative aspect-[4/5] bg-ink-100">
+      <div className="relative w-full bg-ink-100">
+        <div style={{ paddingBottom: '125%' }} />
         {img && (
-          <Image
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
             src={img}
             alt={product.images[0]?.alt || product.name}
-            fill
-            sizes="(max-width:768px) 50vw, 25vw"
-            className="object-cover transition duration-300 group-hover:scale-105"
+            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            loading="lazy"
           />
         )}
         {discount > 0 && (
           <span className="absolute left-2 top-2 rounded-md bg-red-600 px-2 py-0.5 text-[11px] font-black text-white shadow">
-            −{discount}%
+            -{discount}%
           </span>
         )}
         {!product.inStock && (
           <span className="absolute right-2 top-2 rounded-md bg-ink-900/85 px-2 py-0.5 text-[11px] font-bold text-white">
-            Rupture
+            {t.product.outOfStock}
           </span>
         )}
 
-        {/* Hover CTA */}
         <div className="absolute inset-x-2 bottom-2 translate-y-2 opacity-0 transition group-hover:translate-y-0 group-hover:opacity-100">
           <span className="block w-full rounded-lg bg-cta py-2 text-center text-xs font-black text-white shadow-cta">
-            Voir le produit
+            {t.product.viewProduct}
           </span>
         </div>
       </div>

@@ -38,9 +38,31 @@ function extractBundles(meta: WooProductRaw['meta_data']): ProductBundle[] {
   }));
 }
 
+type StoredOption = { label: string; type?: string; values: string | string[] };
+
+function extractMzemOptions(meta: WooProductRaw['meta_data']): { name: string; options: string[]; variation: boolean }[] {
+  const raw = meta.find((m) => m.key === '_mzem_options')?.value;
+  if (!Array.isArray(raw)) return [];
+  return (raw as StoredOption[])
+    .filter((o) => o && o.label)
+    .map((o) => ({
+      name: o.label,
+      options: Array.isArray(o.values)
+        ? o.values.map(String).map((s) => s.trim()).filter(Boolean)
+        : String(o.values ?? '').split(',').map((s) => s.trim()).filter(Boolean),
+      variation: true,
+    }));
+}
+
 export function mapProduct(p: WooProductRaw): Product {
   const meta: Record<string, unknown> = {};
   for (const m of p.meta_data ?? []) meta[m.key] = m.value;
+
+  // PREFER _mzem_options (set by Mzali admin) over native WC attributes.
+  // Fall back to WC attributes when the product was never edited in the new admin.
+  const mzem = extractMzemOptions(p.meta_data ?? []);
+  const native = (p.attributes ?? []).map((a) => ({ name: a.name, options: a.options, variation: a.variation }));
+  const attributes = mzem.length > 0 ? mzem : native;
 
   return {
     id: String(p.id),
@@ -59,7 +81,7 @@ export function mapProduct(p: WooProductRaw): Product {
     images: (p.images ?? []).map((img) => ({ id: String(img.id), url: img.src, alt: img.alt })),
     categoryIds: (p.categories ?? []).map((c) => String(c.id)),
     categorySlugs: (p.categories ?? []).map((c) => c.slug),
-    attributes: (p.attributes ?? []).map((a) => ({ name: a.name, options: a.options, variation: a.variation })),
+    attributes,
     bundles: extractBundles(p.meta_data ?? []),
     upsellIds: (p.upsell_ids ?? []).map(String),
     crossSellIds: (p.cross_sell_ids ?? []).map(String),
@@ -68,15 +90,36 @@ export function mapProduct(p: WooProductRaw): Product {
 }
 
 export function mapOrder(o: WooOrderRaw): OrderResponse {
-  const shippingTotal = (o.shipping_lines ?? []).reduce((s, l) => s + num(l.total), 0);
+  const activeShipping = (o.shipping_lines ?? []).filter((l) => num(l.total) > 0);
+  const shippingTotal = activeShipping.length > 0 ? num(activeShipping[0].total) : 0;
   // Pass the raw slug through — admin UI shows it as-is so custom-status plugins work.
   const status = (o.status ?? 'pending') as OrderStatus;
+  // Fallback: if WC stored total = 0 (legacy orders) reconstruct from line totals.
+  const metaMap: Record<string, unknown> = {};
+  for (const m of o.meta_data ?? []) metaMap[m.key] = m.value;
+  let total = num(o.total);
+  const manualTotal = metaMap._mzem_manual_total;
+  const manualTotalNumber = numberish(manualTotal);
+  if (manualTotalNumber !== null) {
+    total = manualTotalNumber;
+  } else if (total <= 0) {
+    total = (o.line_items ?? []).reduce(
+      (s, li) => s + (num(li.total) || num(li.price) * li.quantity),
+      0,
+    ) + shippingTotal;
+  }
+  const assignedEmployeeId = typeof metaMap._mzem_employee_id === 'string' && metaMap._mzem_employee_id
+    ? metaMap._mzem_employee_id
+    : null;
+  const assignedAt = typeof metaMap._mzem_assigned_at === 'string' ? metaMap._mzem_assigned_at : null;
   return {
     id: String(o.id),
     number: o.number,
     status,
     currency: o.currency || CURRENCY,
-    total: num(o.total),
+    total,
+    assignedEmployeeId,
+    assignedAt,
     createdAt: o.date_created,
     customer: {
       firstName: o.billing.first_name,
@@ -93,8 +136,21 @@ export function mapOrder(o: WooOrderRaw): OrderResponse {
       price: num(li.price),
       total: num(li.total),
       imageUrl: li.image?.src,
+      attributes: (li.meta_data ?? [])
+        .filter((m) => !String(m.key ?? '').startsWith('_'))
+        .map((m) => ({
+          key: String(m.display_key ?? m.key ?? ''),
+          value: typeof m.value === 'string' ? m.value : String(m.display_value ?? JSON.stringify(m.value ?? '')),
+        }))
+        .filter((m) => m.key && m.value && m.value !== '—'),
     })),
     shipping: shippingTotal,
     meta: Object.fromEntries((o.meta_data ?? []).map((m) => [m.key, m.value])),
   };
+}
+
+function numberish(value: unknown): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const n = typeof value === 'number' ? value : Number(String(value).replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
 }

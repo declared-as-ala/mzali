@@ -46,7 +46,7 @@ export type WooOrderRaw = {
     address_1: string; address_2: string; city: string; state: string; postcode: string; country: string;
   };
   shipping: WooOrderRaw['billing'];
-  line_items: { id: number; product_id: number; name: string; quantity: number; price: string; total: string; image?: { id: number; src: string } }[];
-  shipping_lines?: { method_id: string; method_title: string; total: string }[];
+  line_items: { id: number; product_id: number; name: string; quantity: number; price: string; total: string; image?: { id: number; src: string }; meta_data?: { id?: number; key: string; value: unknown; display_key?: string; display_value?: string }[] }[];
+  shipping_lines?: { id?: number; method_id: string; method_title: string; total: string }[];
   meta_data: { id: number; key: string; value: unknown }[];
 };
