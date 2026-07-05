@@ -29,4 +29,5 @@ export interface ProductService {
   create(input: ProductInput): Promise<Product>;
   update(id: string, input: Partial<ProductInput>): Promise<Product>;
   remove(id: string): Promise<void>;
+  reorder(items: { id: string; menuOrder: number }[]): Promise<void>;
 }

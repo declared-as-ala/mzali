@@ -10,6 +10,7 @@ const ORDERBY_MAP: Record<NonNullable<ProductListQuery['orderBy']>, string> = {
   popularity: 'popularity',
   rating: 'rating',
   title: 'title',
+  menu_order: 'menu_order',
 };
 
 function toWoo(input: Partial<ProductInput>): Record<string, unknown> {
@@ -43,10 +44,11 @@ function toWoo(input: Partial<ProductInput>): Record<string, unknown> {
 
 export class WooCommerceProductService implements ProductService {
   async list(query: ProductListQuery = {}): Promise<ProductListResult> {
+    const status = query.status === 'published' ? 'publish' : (query.status ?? 'publish');
     const wcQuery: Record<string, string | number | boolean | undefined> = {
       per_page: query.perPage ?? 24,
       page: query.page ?? 1,
-      status: 'publish',
+      status,
       search: query.search || undefined,
       category: query.categoryId || undefined,
       orderby: query.orderBy ? ORDERBY_MAP[query.orderBy] : 'date',
@@ -104,5 +106,14 @@ export class WooCommerceProductService implements ProductService {
 
   async remove(id: string): Promise<void> {
     await wooClient.del(`/products/${id}`);
+  }
+
+  async reorder(items: { id: string; menuOrder: number }[]): Promise<void> {
+    await wooClient.post('/products/batch', {
+      update: items.map((x) => ({
+        id: Number(x.id),
+        menu_order: x.menuOrder,
+      })),
+    });
   }
 }

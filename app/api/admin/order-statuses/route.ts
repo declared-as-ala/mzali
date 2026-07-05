@@ -8,7 +8,7 @@ import { orderService } from '@/services';
  * Standard WC statuses are appended as fallback.
  */
 export async function GET() {
-  if (!isAdmin()) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
+  if (!(await isAdmin())) return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   try {
     const res = await orderService.list({ perPage: 100 });
     const found = Array.from(new Set(res.items.map((o) => String(o.status)))).filter(Boolean);
