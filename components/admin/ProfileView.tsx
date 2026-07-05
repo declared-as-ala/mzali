@@ -1,12 +1,23 @@
 'use client';
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { UserCircle, Lock, RotateCcw, ShieldCheck, Eye, EyeOff, Check, AlertCircle, KeyRound } from 'lucide-react';
+import Image from 'next/image';
+import { UserCircle, Lock, RotateCcw, ShieldCheck, Eye, EyeOff, Check, AlertCircle, KeyRound, ImageIcon, Phone, Plus, Trash2, Instagram, Facebook, Music2, Globe } from 'lucide-react';
+import ImageUploader from '@/components/admin/ImageUploader';
 
 type Props = {
   hasCustomPassword: boolean;
   passwordUpdatedAt: string | null;
   envFallbackEnabled: boolean;
+};
+
+type SiteInfo = {
+  photoUrl: string;
+  phones: string[];
+  whatsapp: string;
+  instagram: string;
+  tiktok: string;
+  facebook: string;
 };
 
 export default function ProfileView({ hasCustomPassword, passwordUpdatedAt, envFallbackEnabled }: Props) {
@@ -19,6 +30,71 @@ export default function ProfileView({ hasCustomPassword, passwordUpdatedAt, envF
   const [showNext, setShowNext] = useState(false);
   const [status, setStatus] = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null);
   const [busy, setBusy] = useState(false);
+
+  // ── Site info state ─────────────────────────────────────────────────────────
+  const [siteInfo, setSiteInfo] = useState<SiteInfo>({
+    photoUrl: '',
+    phones: [''],
+    whatsapp: '',
+    instagram: '',
+    tiktok: '',
+    facebook: '',
+  });
+  const [siteStatus, setSiteStatus] = useState<{ kind: 'ok' | 'err'; msg: string } | null>(null);
+  const [siteBusy, setSiteBusy] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/admin/site-settings')
+      .then((r) => r.json())
+      .then((d: SiteInfo) => setSiteInfo({
+        photoUrl: d.photoUrl ?? '',
+        phones: d.phones?.length ? d.phones : [''],
+        whatsapp: d.whatsapp ?? '',
+        instagram: d.instagram ?? '',
+        tiktok: d.tiktok ?? '',
+        facebook: d.facebook ?? '',
+      }))
+      .catch(() => {});
+  }, []);
+
+  async function saveSiteInfo(e: React.FormEvent) {
+    e.preventDefault();
+    setSiteStatus(null);
+    const phones = siteInfo.phones.map((p) => p.trim()).filter(Boolean);
+    if (!phones.length) { setSiteStatus({ kind: 'err', msg: 'Au moins un numéro de téléphone requis.' }); return; }
+    setSiteBusy(true);
+    try {
+      const res = await fetch('/api/admin/site-settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...siteInfo, phones }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? 'Erreur');
+      setSiteStatus({ kind: 'ok', msg: 'Informations mises à jour.' });
+      startTransition(() => router.refresh());
+    } catch (err) {
+      setSiteStatus({ kind: 'err', msg: err instanceof Error ? err.message : 'Erreur' });
+    } finally {
+      setSiteBusy(false);
+    }
+  }
+
+  function addPhone() {
+    setSiteInfo((s) => ({ ...s, phones: [...s.phones, ''] }));
+  }
+
+  function removePhone(i: number) {
+    setSiteInfo((s) => ({ ...s, phones: s.phones.filter((_, idx) => idx !== i) }));
+  }
+
+  function updatePhone(i: number, val: string) {
+    setSiteInfo((s) => {
+      const phones = [...s.phones];
+      phones[i] = val;
+      return { ...s, phones };
+    });
+  }
 
   async function changePassword(e: React.FormEvent) {
     e.preventDefault();
@@ -78,6 +154,139 @@ export default function ProfileView({ hasCustomPassword, passwordUpdatedAt, envF
           <p className="text-ink-700">Gérez votre compte administrateur</p>
         </div>
       </header>
+
+      {/* ── Site Info ─────────────────────────────────────────────────────── */}
+      <form onSubmit={saveSiteInfo} className="mb-8 card p-6">
+        <h2 className="mb-5 flex items-center gap-2 text-lg font-black">
+          <Globe size={18} className="text-brand-500" /> Informations de la boutique
+        </h2>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Photo */}
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-700 flex items-center gap-1"><ImageIcon size={13} /> Photo / Logo</p>
+            <div className="flex items-center gap-4">
+              {siteInfo.photoUrl && (
+                <div className="relative h-20 w-20 flex-none overflow-hidden rounded-2xl border border-ink-200 bg-ink-100">
+                  <Image src={siteInfo.photoUrl} alt="logo" fill className="object-cover" unoptimized />
+                </div>
+              )}
+              <ImageUploader
+                onUploaded={(img) => setSiteInfo((s) => ({ ...s, photoUrl: img.url }))}
+                className="flex h-20 w-20 flex-none items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-ink-200 bg-ink-100 text-xs font-bold text-ink-700 transition hover:border-brand-300 hover:bg-ink-200"
+              >
+                <span className="flex flex-col items-center gap-1 text-[10px]">
+                  <ImageIcon size={16} className="text-brand-500" />
+                  Changer
+                </span>
+              </ImageUploader>
+            </div>
+          </div>
+
+          {/* Phones */}
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-ink-700 flex items-center gap-1"><Phone size={13} /> Numéros de téléphone</p>
+            <div className="space-y-2">
+              {siteInfo.phones.map((p, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="tel"
+                    className="input flex-1"
+                    value={p}
+                    onChange={(e) => updatePhone(i, e.target.value)}
+                    placeholder="ex: 20670621"
+                  />
+                  {siteInfo.phones.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removePhone(i)}
+                      className="rounded-lg p-2 text-red-500 hover:bg-red-50"
+                      aria-label="Supprimer"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addPhone}
+                className="inline-flex items-center gap-1 rounded-lg border border-dashed border-ink-300 px-3 py-1.5 text-xs font-bold text-ink-700 hover:bg-ink-100"
+              >
+                <Plus size={13} /> Ajouter un numéro
+              </button>
+            </div>
+          </div>
+
+          {/* Instagram */}
+          <label className="block">
+            <span className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-ink-700">
+              <Instagram size={13} /> Instagram
+            </span>
+            <input
+              type="url"
+              className="input"
+              value={siteInfo.instagram}
+              onChange={(e) => setSiteInfo((s) => ({ ...s, instagram: e.target.value }))}
+              placeholder="https://www.instagram.com/…"
+            />
+          </label>
+
+          {/* TikTok */}
+          <label className="block">
+            <span className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-ink-700">
+              <Music2 size={13} /> TikTok
+            </span>
+            <input
+              type="url"
+              className="input"
+              value={siteInfo.tiktok}
+              onChange={(e) => setSiteInfo((s) => ({ ...s, tiktok: e.target.value }))}
+              placeholder="https://www.tiktok.com/@…"
+            />
+          </label>
+
+          {/* Facebook */}
+          <label className="block">
+            <span className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-ink-700">
+              <Facebook size={13} /> Facebook
+            </span>
+            <input
+              type="url"
+              className="input"
+              value={siteInfo.facebook}
+              onChange={(e) => setSiteInfo((s) => ({ ...s, facebook: e.target.value }))}
+              placeholder="https://www.facebook.com/…"
+            />
+          </label>
+
+          {/* WhatsApp */}
+          <label className="block">
+            <span className="mb-1.5 flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-ink-700">
+              <Phone size={13} /> WhatsApp (numéro)
+            </span>
+            <input
+              type="tel"
+              className="input"
+              value={siteInfo.whatsapp}
+              onChange={(e) => setSiteInfo((s) => ({ ...s, whatsapp: e.target.value }))}
+              placeholder="ex: 22479443"
+            />
+          </label>
+        </div>
+
+        {siteStatus && (
+          <p className={`mt-4 flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold ${siteStatus.kind === 'ok' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+            {siteStatus.kind === 'ok' ? <Check size={14} /> : <AlertCircle size={14} />}
+            {siteStatus.msg}
+          </p>
+        )}
+
+        <button disabled={siteBusy} className="btn-primary mt-5 inline-flex items-center gap-2 disabled:opacity-50">
+          <Check size={16} />
+          {siteBusy ? 'Enregistrement…' : 'Enregistrer les informations'}
+        </button>
+      </form>
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Account info */}

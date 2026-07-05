@@ -1,13 +1,14 @@
 'use client';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingCart, Package, Tag, LogOut, UserCircle } from 'lucide-react';
+import { LayoutDashboard, ShoppingCart, Package, Tag, LogOut, UserCircle, Users } from 'lucide-react';
 
 const items = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
   { href: '/admin/commandes', label: 'Commandes', icon: ShoppingCart },
   { href: '/admin/produits', label: 'Produits', icon: Package },
   { href: '/admin/categories', label: 'Catégories', icon: Tag },
+  { href: '/admin/employees', label: 'Employés', icon: Users },
   { href: '/admin/profile', label: 'Profil', icon: UserCircle },
 ];
 

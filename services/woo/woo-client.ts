@@ -32,7 +32,7 @@ async function call<T>(method: string, path: string, query: WooQuery = {}, body?
     method,
     headers: { 'Content-Type': 'application/json', ...authHeader() },
     body: body ? JSON.stringify(body) : undefined,
-    next: { revalidate: method === 'GET' ? 60 : 0 },
+    cache: 'no-store',
   });
   if (!res.ok) {
     const text = await res.text();
@@ -49,4 +49,5 @@ export const wooClient = {
   post: <T>(path: string, body: unknown)        => call<T>('POST', path, {}, body),
   put:  <T>(path: string, body: unknown)        => call<T>('PUT', path, {}, body),
   del:  <T>(path: string)                       => call<T>('DELETE', path, { force: true }),
+  trash: <T>(path: string)                      => call<T>('DELETE', path, { force: false }),
 };

@@ -1,7 +1,10 @@
 'use client';
 import { useEffect, useState } from 'react';
 import Drawer from './Drawer';
-import { Save, Copy, Trash2, Plus, X, GripVertical } from 'lucide-react';
+import MultiCheckSelect from './MultiCheckSelect';
+import ImageUploader from './ImageUploader';
+import NumberField from './NumberField';
+import { Save, Copy, Trash2, Plus, X, GripVertical, Upload } from 'lucide-react';
 import type { Product, ProductBundle } from '@/types';
 
 type Tab = 'description' | 'options' | 'bundles' | 'related' | 'reviews';
@@ -188,50 +191,26 @@ export default function ProductDrawer({ open, onClose, productId, onSaved }: Pro
               <h3 className="text-sm font-black uppercase tracking-wide text-ink-900">Détails</h3>
             </header>
             <div className="p-5">
-              <div className="mb-5 grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-8">
-                {form.images.map((img) => (
-                  <div key={img.id} className="group relative aspect-square overflow-hidden rounded-xl border border-ink-200 bg-ink-100">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img.url} alt="" className="h-full w-full object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => up('images', form.images.filter((i) => i.id !== img.id))}
-                      className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-md bg-white/90 text-red-500 opacity-0 transition group-hover:opacity-100"
-                    >
-                      <X size={12} />
-                    </button>
-                    <span className="absolute left-1 top-1 grid h-5 w-5 place-items-center rounded-md bg-white/90 text-ink-700">
-                      <GripVertical size={12} />
-                    </span>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() => {
-                    const url = prompt("URL de l'image (collez l'URL d'une image WordPress) :");
-                    if (!url) return;
-                    const id = prompt("ID média WordPress (numéro) :");
-                    if (!id) return;
-                    up('images', [...form.images, { id, url }]);
-                  }}
-                  className="grid aspect-square place-items-center rounded-xl border-2 border-dashed border-ink-200 bg-ink-100 text-xs font-bold text-ink-700 hover:border-brand-300 hover:bg-ink-200"
-                >
-                  <span>800 × 800</span>
-                </button>
-              </div>
+              <ImageGallery
+                images={form.images}
+                onReorder={(next) => up('images', next)}
+                onRemove={(id) => up('images', form.images.filter((i) => i.id !== id))}
+                onAdd={(img) => up('images', [...form.images, img])}
+              />
+              <p className="mb-5 mt-2 text-xs text-ink-700">
+                Glissez-déposez pour réordonner. La première image est l&apos;image principale du produit.
+              </p>
 
               <div className="grid gap-4 md:grid-cols-3">
                 <Field label="Nom du produit" className="md:col-span-1"><input className="input" value={form.name} onChange={(e) => up('name', e.target.value)} /></Field>
                 <Field label="SKU"><input className="input" value={form.sku} onChange={(e) => up('sku', e.target.value)} /></Field>
                 <Field label="Catégories">
-                  <select
-                    multiple
-                    value={form.categoryIds}
-                    onChange={(e) => up('categoryIds', Array.from(e.target.selectedOptions).map((o) => o.value))}
-                    className="input h-[42px]"
-                  >
-                    {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
+                  <MultiCheckSelect
+                    items={categories.map((c) => ({ id: c.id, name: c.name }))}
+                    selected={form.categoryIds}
+                    onChange={(ids) => up('categoryIds', ids)}
+                    placeholder="Pas de catégories"
+                  />
                 </Field>
               </div>
 
@@ -249,7 +228,7 @@ export default function ProductDrawer({ open, onClose, productId, onSaved }: Pro
               </label>
               {form.manageStock && (
                 <Field label="Quantité en stock" className="mt-3 max-w-xs">
-                  <input type="number" min={0} className="input" value={form.stockQuantity} onChange={(e) => up('stockQuantity', Number(e.target.value) || 0)} />
+                  <NumberField className="input" min={0} value={form.stockQuantity} onChange={(v) => up('stockQuantity', v)} />
                 </Field>
               )}
             </div>
@@ -262,11 +241,11 @@ export default function ProductDrawer({ open, onClose, productId, onSaved }: Pro
               <button type="button" className="text-xs font-bold text-brand-500 hover:underline">Appliquer à toutes les options</button>
             </header>
             <div className="grid gap-4 p-5 md:grid-cols-3">
-              <Field label="Prix avant remise"><input type="number" className="input" value={form.regularPrice} onChange={(e) => up('regularPrice', Number(e.target.value) || 0)} /></Field>
-              <Field label="Prix"><input type="number" className="input" value={form.salePrice} onChange={(e) => up('salePrice', Number(e.target.value) || 0)} /></Field>
-              <Field label="Coût"><input type="number" className="input" value={form.cost} onChange={(e) => up('cost', Number(e.target.value) || 0)} /></Field>
-              <Field label="Frais de livraison"><input type="number" className="input" value={form.deliveryPrice} onChange={(e) => up('deliveryPrice', Number(e.target.value) || 0)} /></Field>
-              <Field label="Coût de livraison"><input type="number" className="input" value={form.deliveryCost} onChange={(e) => up('deliveryCost', Number(e.target.value) || 0)} /></Field>
+              <Field label="Prix avant remise"><NumberField className="input" step={0.01} decimals={2} value={form.regularPrice} onChange={(v) => up('regularPrice', v)} /></Field>
+              <Field label="Prix"><NumberField className="input" step={0.01} decimals={2} value={form.salePrice} onChange={(v) => up('salePrice', v)} /></Field>
+              <Field label="Coût"><NumberField className="input" step={0.01} decimals={2} value={form.cost} onChange={(v) => up('cost', v)} /></Field>
+              <Field label="Frais de livraison"><NumberField className="input" step={0.01} decimals={2} value={form.deliveryPrice} onChange={(v) => up('deliveryPrice', v)} /></Field>
+              <Field label="Coût de livraison"><NumberField className="input" step={0.01} decimals={2} value={form.deliveryCost} onChange={(v) => up('deliveryCost', v)} /></Field>
             </div>
           </section>
 
@@ -302,7 +281,7 @@ export default function ProductDrawer({ open, onClose, productId, onSaved }: Pro
                 <BundlesTab bundles={form.bundles} onChange={(b) => up('bundles', b)} />
               )}
               {tab === 'related' && (
-                <p className="text-sm text-ink-700">Sélection multiple — UI à venir. Les IDs en cours: {form.upsellIds.join(', ') || 'aucun'}.</p>
+                <RelatedTab selected={form.upsellIds} onChange={(ids) => up('upsellIds', ids)} />
               )}
               {tab === 'reviews' && (
                 <p className="text-sm text-ink-700">Les avis client s&apos;afficheront ici une fois disponibles depuis l&apos;API.</p>
@@ -312,6 +291,22 @@ export default function ProductDrawer({ open, onClose, productId, onSaved }: Pro
         </div>
       )}
     </Drawer>
+  );
+}
+
+function RelatedTab({ selected, onChange }: { selected: string[]; onChange: (ids: string[]) => void }) {
+  const [items, setItems] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    fetch('/api/admin/products-picker').then((r) => r.json()).then((d: { id: string; name: string }[]) => {
+      setItems(d.map((p) => ({ id: p.id, name: p.name })));
+    }).catch(() => {}).finally(() => setLoading(false));
+  }, []);
+  if (loading) return <p className="text-sm text-ink-700">Chargement…</p>;
+  return (
+    <Field label="Produits associés">
+      <MultiCheckSelect items={items} selected={selected} onChange={onChange} placeholder="Aucun produit associé" />
+    </Field>
   );
 }
 
@@ -422,10 +417,10 @@ function BundlesTab({ bundles, onChange }: { bundles: ProductBundle[]; onChange:
                 <Field label="Libellé"><input className="input" value={b.label ?? ''} onChange={(e) => update(i, { label: e.target.value })} /></Field>
               </div>
               <div className="mt-3 grid gap-3 md:grid-cols-4">
-                <Field label="Prix avant remise"><input type="number" className="input" value={b.regularPrice} onChange={(e) => update(i, { regularPrice: Number(e.target.value) || 0 })} /></Field>
-                <Field label="Prix"><input type="number" className="input" value={b.price} onChange={(e) => update(i, { price: Number(e.target.value) || 0 })} /></Field>
-                <Field label="Frais de livraison"><input type="number" className="input" value={b.deliveryPrice} onChange={(e) => update(i, { deliveryPrice: Number(e.target.value) || 0 })} /></Field>
-                <Field label="Quantité"><input type="number" min={1} className="input" value={b.quantity} onChange={(e) => update(i, { quantity: Math.max(1, Number(e.target.value) || 1) })} /></Field>
+                <Field label="Prix avant remise"><NumberField className="input" step={0.01} decimals={2} value={b.regularPrice} onChange={(v) => update(i, { regularPrice: v })} /></Field>
+                <Field label="Prix"><NumberField className="input" step={0.01} decimals={2} value={b.price} onChange={(v) => update(i, { price: v })} /></Field>
+                <Field label="Frais de livraison"><NumberField className="input" step={0.01} decimals={2} value={b.deliveryPrice} onChange={(v) => update(i, { deliveryPrice: v })} /></Field>
+                <Field label="Quantité"><NumberField className="input" min={1} blankOnZero={false} value={b.quantity} onChange={(v) => update(i, { quantity: Math.max(1, v) })} /></Field>
               </div>
               <div className="mt-3 flex flex-wrap items-center gap-3 text-xs">
                 <span className="font-bold text-ink-700">Couleur de la marque de remise :</span>
@@ -446,24 +441,118 @@ function BundlesTab({ bundles, onChange }: { bundles: ProductBundle[]; onChange:
             </div>
             <div>
               <span className="mb-1.5 block text-xs font-bold uppercase text-ink-700">Image</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const url = prompt("URL de l'image du bundle :");
-                  if (url) update(i, { imageUrl: url });
-                }}
-                className="grid h-32 w-full place-items-center rounded-xl border-2 border-dashed border-ink-200 bg-ink-100 text-xs font-bold text-ink-700 hover:border-brand-300"
-              >
-                {b.imageUrl
+              <div className="relative">
+                {b.imageUrl && (
                   /* eslint-disable-next-line @next/next/no-img-element */
-                  ? <img src={b.imageUrl} alt="" className="h-full w-full rounded-xl object-cover" />
-                  : <span>400 × 400</span>}
-              </button>
+                  <img src={b.imageUrl} alt="" className="h-32 w-full rounded-xl object-cover" />
+                )}
+                <ImageUploader
+                  onUploaded={(img) => update(i, { imageUrl: img.url })}
+                  className={`${b.imageUrl ? 'absolute inset-0 bg-black/35 text-white opacity-0 transition hover:opacity-100 rounded-xl flex items-center justify-center' : 'flex h-32 w-full items-center justify-center rounded-xl border-2 border-dashed border-ink-200 bg-ink-100 text-xs font-bold text-ink-700 transition hover:border-brand-300 hover:bg-ink-200'}`}
+                >
+                  {b.imageUrl ? (
+                    <span className="flex items-center gap-1.5 rounded-lg bg-white/95 px-3 py-1.5 text-xs font-bold text-ink-900">
+                      <Upload size={14} className="text-brand-500" /> Remplacer
+                    </span>
+                  ) : (
+                    <span className="flex flex-col items-center gap-1">
+                      <Upload size={18} className="text-brand-500" />
+                      <span>400 × 400</span>
+                    </span>
+                  )}
+                </ImageUploader>
+              </div>
             </div>
           </div>
         </article>
       ))}
       {bundles.length === 0 && <p className="text-sm text-ink-700">Aucun bundle. Cliquez sur « Ajouter un bundle ».</p>}
+    </div>
+  );
+}
+
+/**
+ * Drag-and-drop reorderable image gallery (HTML5 DnD, no extra deps).
+ * Each tile is draggable. Drop the dragged tile onto another to swap places.
+ * The "+ upload" tile is appended at the end and not reorderable.
+ */
+function ImageGallery({
+  images, onReorder, onRemove, onAdd,
+}: {
+  images: { id: string; url: string }[];
+  onReorder: (next: { id: string; url: string }[]) => void;
+  onRemove: (id: string) => void;
+  onAdd: (img: { id: string; url: string }) => void;
+}) {
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
+
+  function move(from: number, to: number) {
+    if (from === to || from < 0 || to < 0) return;
+    const next = images.slice();
+    const [it] = next.splice(from, 1);
+    next.splice(to, 0, it);
+    onReorder(next);
+  }
+
+  return (
+    <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-8">
+      {images.map((img, i) => {
+        const isDragged = dragFrom === i;
+        const isTarget = dragOver === i && dragFrom !== null && dragFrom !== i;
+        const isMain = i === 0;
+        return (
+          <div
+            key={img.id}
+            draggable
+            onDragStart={(e) => {
+              setDragFrom(i);
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', String(i));
+            }}
+            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOver(i); }}
+            onDragLeave={() => setDragOver((cur) => (cur === i ? null : cur))}
+            onDrop={(e) => {
+              e.preventDefault();
+              const from = dragFrom ?? Number(e.dataTransfer.getData('text/plain'));
+              if (Number.isFinite(from)) move(from as number, i);
+              setDragFrom(null); setDragOver(null);
+            }}
+            onDragEnd={() => { setDragFrom(null); setDragOver(null); }}
+            className={`group relative aspect-square cursor-grab overflow-hidden rounded-xl border bg-ink-100 transition active:cursor-grabbing ${
+              isDragged ? 'border-brand-500 opacity-40' :
+              isTarget ? 'border-brand-500 ring-2 ring-brand-300 scale-[1.04]' :
+              'border-ink-200'
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={img.url} alt="" draggable={false} className="pointer-events-none h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => onRemove(img.id)}
+              className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-md bg-white/90 text-red-500 opacity-0 transition group-hover:opacity-100"
+              aria-label="Supprimer"
+            >
+              <X size={12} />
+            </button>
+            <span
+              className="absolute left-1 top-1 grid h-5 w-5 place-items-center rounded-md bg-white/95 text-ink-700"
+              aria-hidden
+            >
+              <GripVertical size={12} />
+            </span>
+            {isMain && (
+              <span className="absolute bottom-1 left-1 rounded bg-brand-500 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-white">
+                Principale
+              </span>
+            )}
+          </div>
+        );
+      })}
+      <ImageUploader
+        multiple
+        onUploaded={(img) => onAdd(img)}
+      />
     </div>
   );
 }
